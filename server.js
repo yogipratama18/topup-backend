@@ -1,7 +1,21 @@
 const express = require("express");
 const cors = require("cors");
 const midtransClient = require("midtrans-client");
+const admin = require("firebase-admin");
+const {
+  getFirestore,
+  FieldValue,
+} = require("firebase-admin/firestore");
+
 require("dotenv").config();
+
+const serviceAccount = require("./serviceAccountKey.json");
+
+admin.initializeApp({
+  credential: admin.cert(serviceAccount),
+});
+
+const db = getFirestore();
 
 const app = express();
 
@@ -36,8 +50,11 @@ app.post("/create-transaction", async (req, res) => {
       },
 
       customer_details: {
-        first_name: req.body.customerName || "Customer",
-        email: req.body.customerEmail || "customer@email.com",
+        first_name:
+          req.body.customerName || "Customer",
+        email:
+          req.body.customerEmail ||
+          "customer@email.com",
       },
     });
 
@@ -47,7 +64,7 @@ app.post("/create-transaction", async (req, res) => {
       redirectUrl: transaction.redirect_url,
     });
   } catch (e) {
-    console.error(e);
+    console.error("Create Transaction Error:", e);
 
     res.status(500).json({
       success: false,
@@ -56,6 +73,97 @@ app.post("/create-transaction", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server Running On Port 3000");
-});
+/*
+|--------------------------------------------------------------------------
+| MIDTRANS WEBHOOK
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+  "/midtrans-notification",
+  async (req, res) => {
+    try {
+      const notification = req.body;
+
+      console.log(
+        "MIDTRANS WEBHOOK:",
+        JSON.stringify(notification, null, 2)
+      );
+
+      const orderId =
+        notification.order_id;
+
+      const transactionStatus =
+        notification.transaction_status;
+
+      const fraudStatus =
+        notification.fraud_status;
+
+      let status = "pending";
+
+      if (
+        transactionStatus === "capture" &&
+        fraudStatus === "accept"
+      ) {
+        status = "success";
+      } else if (
+        transactionStatus === "settlement"
+      ) {
+        status = "success";
+      } else if (
+        transactionStatus === "pending"
+      ) {
+        status = "pending";
+      } else if (
+        transactionStatus === "expire"
+      ) {
+        status = "expired";
+      } else if (
+        transactionStatus === "cancel"
+      ) {
+        status = "failed";
+      } else if (
+        transactionStatus === "deny"
+      ) {
+        status = "failed";
+      }
+
+      await db
+        .collection("transactions")
+        .doc(orderId)
+        .update({
+          status: status,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+      console.log(
+        `Transaction ${orderId} updated to ${status}`
+      );
+
+      res.status(200).json({
+        success: true,
+      });
+    } catch (e) {
+      console.error(
+        "Webhook Error:",
+        e
+      );
+
+      res.status(500).json({
+        success: false,
+        message: e.message,
+      });
+    }
+  }
+);
+
+app.listen(
+  process.env.PORT || 3000,
+  () => {
+    console.log(
+      `Server Running On Port ${
+        process.env.PORT || 3000
+      }`
+    );
+  }
+);
