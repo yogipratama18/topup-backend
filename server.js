@@ -12,6 +12,16 @@ app.get("/", (req, res) => {
   res.send("Backend Midtrans Running");
 });
 
+console.log(
+  "MIDTRANS KEY EXISTS:",
+  !!process.env.MIDTRANS_SERVER_KEY
+);
+
+console.log(
+  "MIDTRANS KEY PREFIX:",
+  process.env.MIDTRANS_SERVER_KEY?.substring(0, 20)
+);
+
 app.post("/create-transaction", async (req, res) => {
   try {
     const snap = new midtransClient.Snap({
