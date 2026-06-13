@@ -107,11 +107,11 @@ app.post(
         transactionStatus === "capture" &&
         fraudStatus === "accept"
       ) {
-        status = "success";
+        status = "paid";
       } else if (
         transactionStatus === "settlement"
       ) {
-        status = "success";
+        status = "paid";
       } else if (
         transactionStatus === "pending"
       ) {
