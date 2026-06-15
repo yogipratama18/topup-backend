@@ -3,6 +3,7 @@ const cors = require("cors");
 const midtransClient = require("midtrans-client");
 const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
+console.log(admin);
 const {
   getFirestore,
   FieldValue,
@@ -14,11 +15,22 @@ require("dotenv").config();
 console.log("EMAIL_USER =", process.env.EMAIL_USER);
 console.log("EMAIL_PASS EXISTS =", !!process.env.EMAIL_PASS);
 
-const serviceAccount = require("./serviceAccountKey.json");
+let serviceAccount;
 
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+serviceAccount = JSON.parse(
+process.env.FIREBASE_SERVICE_ACCOUNT
+);
+} else {
+serviceAccount = require('./serviceAccountKey.json');
+}
+
+console.log("SERVICE ACCOUNT TYPE:", typeof serviceAccount);
+console.log(serviceAccount.project_id);
 admin.initializeApp({
-  credential: admin.cert(serviceAccount),
+credential: admin.cert(serviceAccount),
 });
+
 
 const db = getFirestore();
 
