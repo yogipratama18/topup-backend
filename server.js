@@ -17,6 +17,10 @@ console.log("EMAIL_PASS EXISTS =", !!process.env.EMAIL_PASS);
 
 let serviceAccount;
 
+console.log(
+  "FIREBASE_SERVICE_ACCOUNT EXISTS:",
+  !!process.env.FIREBASE_SERVICE_ACCOUNT
+);
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 serviceAccount = JSON.parse(
 process.env.FIREBASE_SERVICE_ACCOUNT
